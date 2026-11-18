@@ -1,0 +1,6 @@
+{
+  "name": "Atelier Pixel",
+  "description": "Precision pixel art and frame-by-frame animation studio with layers, blend modes, symmetry, custom brushes, onion skinning, effects, transitions, high-resolution PNG export, and cloud vault sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

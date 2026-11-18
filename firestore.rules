@@ -1,0 +1,213 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.uid == userId
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 80
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 160
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProject(data, userId, projectId) {
+      return data.keys().hasAll([
+          'id',
+          'ownerId',
+          'name',
+          'type',
+          'width',
+          'height',
+          'activeFrameIndex',
+          'activeLayerId',
+          'onionSkin',
+          'palette',
+          'customBrushes',
+          'frames',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'name',
+          'type',
+          'width',
+          'height',
+          'activeFrameIndex',
+          'activeLayerId',
+          'onionSkin',
+          'palette',
+          'customBrushes',
+          'frames',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.id == projectId
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 120
+        && data.type is string
+        && (data.type == 'canvas' || data.type == 'video')
+        && data.width is int
+        && data.width >= 4
+        && data.width <= 256
+        && data.height is int
+        && data.height >= 4
+        && data.height <= 256
+        && data.activeFrameIndex is int
+        && data.activeFrameIndex >= 0
+        && data.activeFrameIndex < data.frames.size()
+        && isValidId(data.activeLayerId)
+        && data.onionSkin is map
+        && data.palette is list
+        && data.palette.size() >= 1
+        && data.palette.size() <= 64
+        && data.palette[0] is string
+        && data.customBrushes is list
+        && data.customBrushes.size() >= 1
+        && data.customBrushes.size() <= 32
+        && data.customBrushes[0] is map
+        && data.frames is list
+        && data.frames.size() >= 1
+        && data.frames.size() <= 120
+        && data.frames[0] is map
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // PII-Isolated User Profile Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow delete: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'updatedAt']);
+
+      // User-Owned Pixel Art & Animation Projects
+      match /projects/{projectId} {
+        allow get: if isValidId(userId)
+          && isValidId(projectId)
+          && isOwner(userId)
+          && existing().ownerId == request.auth.uid;
+
+        allow list: if isOwner(userId)
+          && existing().ownerId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(projectId)
+          && isOwner(userId)
+          && isValidProject(incoming(), userId, projectId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(projectId)
+          && isOwner(userId)
+          && existing().ownerId == request.auth.uid
+          && isValidProject(incoming(), userId, projectId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().width == existing().width
+          && incoming().height == existing().height
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            (
+              incoming().type == existing().type
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'name',
+                'activeFrameIndex',
+                'activeLayerId',
+                'onionSkin',
+                'palette',
+                'customBrushes',
+                'frames',
+                'updatedAt'
+              ])
+            )
+            || (
+              existing().type == 'canvas'
+              && incoming().type == 'video'
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'name',
+                'type',
+                'activeFrameIndex',
+                'activeLayerId',
+                'onionSkin',
+                'palette',
+                'customBrushes',
+                'frames',
+                'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(projectId)
+          && isOwner(userId)
+          && existing().ownerId == request.auth.uid;
+      }
+    }
+  }
+}

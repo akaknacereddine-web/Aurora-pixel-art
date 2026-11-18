@@ -1,0 +1,124 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+    /* Default Aurora Blues theme tokens (overridden dynamically by Website Theme Engine) */
+    --ui-bg-app: #081023;
+    --ui-bg-canvas-stage: #060C1B;
+    --ui-bg-bar: #0B152F;
+    --ui-bg-panel: #0F1A36;
+    --ui-bg-card: #132248;
+    --ui-bg-hover: #16244A;
+    --ui-bg-hover-strong: #1E3163;
+    --ui-bg-active: #162C5E;
+    --ui-border: #1E3163;
+    --ui-border-strong: #253A6E;
+    --ui-border-hover: #3D5CA3;
+    --ui-text-primary: #F4F8FF;
+    --ui-text-secondary: #C7D7F5;
+    --ui-text-muted: #9BB4E3;
+    --ui-text-faint: #6682BA;
+    --ui-accent: #3CF2EA;
+    --ui-accent-hover: #67F7F0;
+    --ui-accent-contrast: #061326;
+    --ui-accent-secondary: #D8B4FE;
+    --ui-accent-secondary-soft: rgba(192, 132, 252, 0.18);
+    --ui-checker-a: #101B3B;
+    --ui-checker-b: #172652;
+    --ui-scroll-track: #0A142C;
+    --ui-scroll-thumb: #253A6E;
+    --ui-scroll-thumb-hover: #38569E;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--ui-bg-app);
+    color: var(--ui-text-primary);
+  }
+
+  .font-mono,
+  .tabular-nums {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.checkerboard-bg {
+  background-color: var(--ui-checker-a);
+  background-image:
+    linear-gradient(45deg, var(--ui-checker-b) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--ui-checker-b) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--ui-checker-b) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--ui-checker-b) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.checkerboard-sm {
+  background-color: var(--ui-checker-a);
+  background-image:
+    linear-gradient(45deg, var(--ui-checker-b) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--ui-checker-b) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--ui-checker-b) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--ui-checker-b) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+/* Theme-aware scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ui-scroll-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-scroll-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-scroll-thumb-hover);
+}
+
+/* Theme-aware range input styling */
+input[type='range'].studio-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--ui-border-strong);
+  outline: none;
+}
+
+input[type='range'].studio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--ui-accent);
+  border: 2px solid var(--ui-bg-app);
+  cursor: pointer;
+}
+
+input[type='range'].studio-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--ui-accent);
+  border: 2px solid var(--ui-bg-app);
+  cursor: pointer;
+}
